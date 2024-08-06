@@ -1,20 +1,16 @@
-#include <Windows.h>
 #include <string>
+#include <Windows.h>
 #include <WinUser.h>
 
-void OpenConsole()
+bool InitConsole()
 {
-	static std::wstring title = L"Scratch Console";
 	if (AllocConsole()) {
 		FILE* pCout;
 		freopen_s(&pCout, "CONOUT$", "w", stdout);
-		SetConsoleTitleW(title.c_str());
+		SetConsoleTitleW(L"Scratch Console");
+		return true;
 	}
-}
-
-void InitGraphics()
-{
-
+	return false;
 }
 
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -22,6 +18,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 	switch (message)
 	{
 	case WM_PAINT:
+		printf("WM_PAINT\n");
+		return S_OK;
 	case WM_SYSKEYDOWN:
 	case WM_KEYDOWN:
 	case WM_SYSKEYUP:
@@ -36,55 +34,53 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 	case WM_MBUTTONUP:
 	case WM_MOUSEWHEEL:
 	case WM_SIZE:
+		printf("WM_MISC");
+		return S_OK;
 	case WM_DESTROY:
+		PostQuitMessage(0);
 		return S_OK;
 	default:
 		return DefWindowProcW(hwnd, message, wParam, lParam);
 	}
 }
 
-static std::wstring WINDOW_CLASS_NAME = L"Scratch Window";
-
-static int CALLBACK wWinMain(
-	_In_ HINSTANCE hInstance,
-	_In_opt_ HINSTANCE hPrevInstance,
-	_In_ LPWSTR lpCmdLine,
-	_In_ int nShowCmd)
+bool InitWindow(HINSTANCE hInstance, LONG Width, LONG Height)
 {
-	//OpenConsole();
-
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
-	WNDCLASSEXW wndClass = { 0 };
-	wndClass.cbSize = sizeof(WNDCLASSEX);
-	wndClass.style = CS_HREDRAW | CS_VREDRAW;
-	wndClass.lpfnWndProc = &WndProc;
-	wndClass.hInstance = hInstance;
-	wndClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
-	wndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-	wndClass.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	wndClass.lpszMenuName = nullptr;
-	wndClass.lpszClassName = WINDOW_CLASS_NAME.c_str();
-	wndClass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	std::wstring WndClassName = L"Scratch Window";
 
-	if (!RegisterClassExW(&wndClass))
+	WNDCLASSEXW WndClass = { 0 };
+	WndClass.cbSize = sizeof(WNDCLASSEX);
+	WndClass.style = CS_HREDRAW | CS_VREDRAW;
+	WndClass.lpfnWndProc = &WndProc;
+	WndClass.hInstance = hInstance;
+	WndClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	WndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	WndClass.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+	WndClass.lpszMenuName = nullptr;
+	WndClass.lpszClassName = WndClassName.c_str();
+	WndClass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+
+	if (!RegisterClassExW(&WndClass))
 	{
-		MessageBoxA(NULL, "Unable to register the window class.", "Error", MB_OK | MB_ICONERROR);
+		return false;
 	}
 
-	RECT windowRect = { 0, 0, 1920, 1080 };
+	RECT windowRect = { 0, 0, Width, Height };
 	AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
-
-	std::wstring windowName = L"Scratch Window1";
-
-	HWND hWnd = CreateWindowW(WINDOW_CLASS_NAME.c_str(), windowName.c_str(),
+	HWND hWnd = CreateWindowW(WndClassName.c_str(), L"Scratch Window",
 		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
 		windowRect.right - windowRect.left,
 		windowRect.bottom - windowRect.top,
 		nullptr, nullptr, hInstance, nullptr);
-
 	::ShowWindow(hWnd, SW_SHOW);
 
+	return true;
+}
+
+void InitMsgLoop()
+{
 	MSG msg = { 0 };
 	while (msg.message != WM_QUIT)
 	{
@@ -94,7 +90,16 @@ static int CALLBACK wWinMain(
 			DispatchMessage(&msg);
 		}
 	}
+}
 
-    int retCode = 0;
-    return retCode;
+static int CALLBACK wWinMain(
+	_In_ HINSTANCE hInstance,
+	_In_opt_ HINSTANCE hPrevInstance,
+	_In_ LPWSTR lpCmdLine,
+	_In_ int nShowCmd)
+{
+	InitConsole();
+	InitWindow(hInstance, 1920, 1080);
+	InitMsgLoop();
+	return 0;
 }

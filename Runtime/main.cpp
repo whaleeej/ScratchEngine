@@ -1,50 +1,24 @@
 #include <string>
 #include <Windows.h>
-#include <WinUser.h>
+#include "GfxDevice.h"
+#include "Application.h"
 
-bool InitConsole()
+#if !defined(NDEBUG)
+#define DEBUG_MODE 1
+#else
+#define DEBUG_MODE 0
+#endif
+
+void InitConsole()
 {
 	if (AllocConsole()) {
 		FILE* pCout;
 		freopen_s(&pCout, "CONOUT$", "w", stdout);
 		SetConsoleTitleW(L"Scratch Console");
-		return true;
-	}
-	return false;
-}
-
-static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	switch (message)
-	{
-	case WM_PAINT:
-		printf("WM_PAINT\n");
-		return S_OK;
-	case WM_SYSKEYDOWN:
-	case WM_KEYDOWN:
-	case WM_SYSKEYUP:
-	case WM_KEYUP:
-	case WM_SYSCHAR:
-	case WM_MOUSEMOVE:
-	case WM_LBUTTONDOWN:
-	case WM_RBUTTONDOWN:
-	case WM_MBUTTONDOWN:
-	case WM_LBUTTONUP:
-	case WM_RBUTTONUP:
-	case WM_MBUTTONUP:
-	case WM_MOUSEWHEEL:
-	case WM_SIZE:
-		printf("WM_MISC");
-		return S_OK;
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		return S_OK;
-	default:
-		return DefWindowProcW(hwnd, message, wParam, lParam);
 	}
 }
 
-bool InitWindow(HINSTANCE hInstance, LONG Width, LONG Height)
+bool InitWindow(HINSTANCE hInstance, WNDPROC lpfnWndProc, LONG Width, LONG Height, HWND& hWnd)
 {
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
@@ -53,7 +27,7 @@ bool InitWindow(HINSTANCE hInstance, LONG Width, LONG Height)
 	WNDCLASSEXW WndClass = { 0 };
 	WndClass.cbSize = sizeof(WNDCLASSEX);
 	WndClass.style = CS_HREDRAW | CS_VREDRAW;
-	WndClass.lpfnWndProc = &WndProc;
+	WndClass.lpfnWndProc = lpfnWndProc;
 	WndClass.hInstance = hInstance;
 	WndClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	WndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
@@ -69,7 +43,7 @@ bool InitWindow(HINSTANCE hInstance, LONG Width, LONG Height)
 
 	RECT windowRect = { 0, 0, Width, Height };
 	AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
-	HWND hWnd = CreateWindowW(WndClassName.c_str(), L"Scratch Window",
+	hWnd = CreateWindowW(WndClassName.c_str(), L"Scratch Window",
 		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
 		windowRect.right - windowRect.left,
 		windowRect.bottom - windowRect.top,
@@ -92,6 +66,45 @@ void InitMsgLoop()
 	}
 }
 
+static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_PAINT:
+	{
+		GetApplication().Update();
+		GetApplication().Render();
+		return S_OK;
+	}
+	case WM_SYSKEYDOWN:
+	case WM_KEYDOWN:
+	case WM_SYSKEYUP:
+	case WM_KEYUP:
+	case WM_SYSCHAR:
+	case WM_MOUSEMOVE:
+	case WM_LBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+	case WM_MBUTTONDOWN:
+	case WM_LBUTTONUP:
+	case WM_RBUTTONUP:
+	case WM_MBUTTONUP:
+	case WM_MOUSEWHEEL:
+	case WM_SIZE:
+	{
+		return S_OK;
+	}
+	case WM_DESTROY:
+	{
+		PostQuitMessage(0); 
+		return S_OK;
+	}
+	default:
+	{
+		return DefWindowProcW(hwnd, message, wParam, lParam);
+	}
+	}
+}
+
 static int CALLBACK wWinMain(
 	_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -99,7 +112,16 @@ static int CALLBACK wWinMain(
 	_In_ int nShowCmd)
 {
 	InitConsole();
-	InitWindow(hInstance, 1920, 1080);
+
+	HWND hWnd;
+	if (!InitWindow(hInstance, WndProc, 1920, 1080, hWnd))
+		return 0;
+
+	const bool debugLayer = DEBUG_MODE;
+	if (!GetGfxDevice().Initialize(hWnd, 1920, 1080, debugLayer))
+		return 0;
+
 	InitMsgLoop();
+
 	return 0;
 }

@@ -118,7 +118,7 @@ static int CALLBACK wWinMain(
 		return 0;
 
 	const bool debugLayer = DEBUG_MODE;
-	if (!GetGfxDevice().Initialize(hWnd, 1920, 1080, debugLayer))
+	if (!GetGfxDevice().Initialize(hWnd, 1920, 1080, 3, debugLayer))
 		return 0;
 
 	InitMsgLoop();

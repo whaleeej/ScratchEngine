@@ -7,9 +7,12 @@ class GfxDevice
 public:
 	GfxDevice();
 	~GfxDevice();
-	bool Initialize(HWND hWnd, UINT width, UINT height, bool debug);
+	bool Initialize(HWND hWnd, UINT width, UINT height, UINT backBufferCount, bool debug);
 
 public:
+	void Begin();
+	void ResetBackBuffers(FLOAT* color);
+	void Submit();
 	void Present(bool vSync);
 
 private:
@@ -26,6 +29,9 @@ private:
 	ID3D12Fence* m_Fence;
 	UINT64 m_FenceValue;
 	HANDLE m_FenceEvent;
+
+	UINT m_BackBufferCount;
+	UINT m_BackBufferIndex;
 };
 
 GfxDevice& GetGfxDevice();

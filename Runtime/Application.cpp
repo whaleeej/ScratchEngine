@@ -25,30 +25,10 @@ void Application::Update()
 void Application::Render()
 {
 	GfxDevice& device = GetGfxDevice();
-	device.Present(false);
-
-	//for (int i = 0; i < kBackBufferCount; ++i)
-	//{
-	//	ID3D12Resource* resource = nullptr;
-	//	s_SwapChain->GetBuffer(i, IID_PPV_ARGS(&resource));
-
-	//	const FLOAT color[4] = { (i == 0 ? 1 : 0), (i == 1 ? 1 : 0), (i == 2 ? 1 : 0), 1 };
-
-	//	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc;
-	//	rtvDesc.Format = swapChainDesc.Format;
-	//	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-	//	rtvDesc.Texture2D.MipSlice = 0;
-	//	rtvDesc.Texture2D.PlaneSlice = 0;
-
-	//	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(cpuHandle, i, s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV));
-	//	s_Device->CreateRenderTargetView(resource, &rtvDesc, handle);
-	//	commandList->ClearRenderTargetView(cpuHandle, color, 0, nullptr);
-	//}
-
-	//commandList->Close();
-
-	//ID3D12CommandList * const cmd = commandList;
-	//s_Queue->ExecuteCommandLists(1, &cmd);
+	device.Begin();
+	device.ResetBackBuffers(nullptr);
+	device.Submit();
+	device.Present(true);
 }
 
 Application& GetApplication()
